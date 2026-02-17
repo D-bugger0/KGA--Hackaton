@@ -3,15 +3,15 @@ import { motion } from 'framer-motion';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-amber-500/30 relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-gold-500/30 relative overflow-hidden flex flex-col">
       
       {/* 1. FUTURISTIC OVERLAYS */}
-      {/* Scanline Effect */}
+      {/* Scanline Effect - Gives it that AI monitor feel */}
       <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
       
       {/* Dynamic Gold Glows */}
-      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] bg-amber-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] bg-gold-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-gold-500/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* 2. MAIN CONTENT CONTAINER */}
       <motion.main 
@@ -22,14 +22,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {children}
       </motion.main>
 
-      {/* 3. MINIMALIST GOLD BORDER FOOTER */}
-      <footer className="relative z-10 border-t border-amber-500/10 py-6 bg-black/40 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-6 flex justify-between items-center text-[10px] uppercase tracking-[0.2em] font-bold text-white/20">
-          <span>Encrypted Connection</span>
-          <div className="flex items-center gap-2 text-amber-500/40">
-            <span className="w-1 h-1 bg-amber-500 rounded-full animate-ping" />
-            Garry Protocol v1.0
-          </div>
+      {/* 3. MINIMALIST CENTERED FOOTER */}
+      <footer className="relative z-10 py-10">
+        <div className="flex items-center justify-center gap-6">
+          {/* Decorative side lines */}
+          <div className="h-[1px] w-12 bg-gold-500/10" />
+          
+          <p className="text-[10px] uppercase tracking-[0.5em] font-bold text-white/20">
+            Garry 2026
+          </p>
+          
+          <div className="h-[1px] w-12 bg-gold-500/10" />
         </div>
       </footer>
     </div>
