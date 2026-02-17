@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+  --color-dark-bg: #050505;
+}
+
+@layer base {
+  html, body, #root {
+    @apply h-full m-0 p-0 bg-dark-bg text-white overflow-x-hidden;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Custom Scrollbar for that premium feel */
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #050505;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-gold-600);
+    border-radius: 10px;
+  }
+}
