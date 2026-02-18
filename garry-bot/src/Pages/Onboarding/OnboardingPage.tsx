@@ -1,99 +1,113 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguage } from '../../context/LanguageContext';
-import { Send, User, Bot as BotIcon, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { Mail, Sparkles, ArrowRight, Heart } from "lucide-react";
 
 export default function OnboardingPage() {
-  const { language } = useLanguage();
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const navigate = useNavigate();
-  const [inputValue, setInputValue] = useState('');
-  
-  // For the UI setup, we'll use local state to simulate the chat flow
-  const [messages, setMessages] = useState([
-    { id: 1, type: 'bot', text: `Welcome! You've selected ${language}.` },
-    { id: 2, type: 'bot', text: "I'm Garry. What should I call you?" }
-  ]);
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
-    
-    // Add user message
-    const userMsg = { id: Date.now(), type: 'user', text: inputValue };
-    setMessages((prev) => [...prev, userMsg]);
-    setInputValue('');
-
-    // Simulate bot thinking/typing
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { 
-        id: Date.now() + 1, 
-        type: 'bot', 
-        text: "Thanks! Now, what is your email address?" 
-      }]);
-    }, 1000);
-  };
+  const nextStep = () => setStep(step + 1);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-sans">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 p-4 flex items-center gap-4 sticky top-0 z-10">
-        <button onClick={() => navigate('/')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-          <ArrowLeft size={20} className="text-slate-600" />
-        </button>
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-xl shadow-md shadow-blue-200">
-            <BotIcon size={20} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-slate-900">Garry AI</h1>
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-[10px] text-slate-500 uppercase font-medium tracking-wider">Online</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Chat Area */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-6">
-        <AnimatePresence>
-          {messages.map((msg) => (
+    <div className="h-screen w-full flex flex-col items-center justify-center p-6 overflow-hidden relative bg-[#050505]">
+      
+      <div className="w-full max-w-lg">
+        <AnimatePresence mode="wait">
+          {/* STEP 1: ASKING FOR NAME */}
+          {step === 1 && (
             <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              key="step1"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8 text-center"
             >
-              <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
-                msg.type === 'user' 
-                ? 'bg-blue-600 text-white rounded-tr-none' 
-                : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
-              }`}>
-                {msg.text}
+              <div className="flex justify-center mb-6">
+                <div className="p-4 bg-gold-500/5 rounded-full border border-gold-500/10">
+                  <Sparkles size={32} className="text-gold-500 animate-pulse" />
+                </div>
+              </div>
+              
+              <h2 className="text-3xl md:text-4xl font-light text-white leading-tight">
+                Hello. I'm <span className="text-gold-500 font-medium">Garry</span>. <br />
+                May I ask who I have the pleasure of assisting today?
+              </h2>
+
+              <div className="relative max-w-sm mx-auto">
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Your name..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && name && nextStep()}
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-2xl text-center outline-none focus:border-gold-500 transition-all text-white placeholder:text-white/5"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  onClick={nextStep}
+                  disabled={!name}
+                  className="absolute right-0 bottom-4 text-gold-500 disabled:opacity-0 transition-opacity"
+                >
+                  <ArrowRight size={24} />
+                </motion.button>
               </div>
             </motion.div>
-          ))}
-        </AnimatePresence>
-      </main>
+          )}
 
-      {/* Input Area */}
-      <footer className="p-4 bg-white border-t border-slate-200 pb-8 md:pb-4">
-        <div className="max-w-4xl mx-auto relative flex items-center gap-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type your answer..."
-            className="w-full p-4 pr-12 bg-slate-100 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 text-slate-900 placeholder-slate-400 transition-all outline-none"
-          />
-          <button 
-            onClick={handleSend}
-            className="absolute right-2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-          >
-            <Send size={20} />
-          </button>
-        </div>
+          {/* STEP 2: ASKING FOR EMAIL WITH PERSONAL TOUCH */}
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8 text-center"
+            >
+              <div className="flex justify-center mb-6">
+                <Heart size={32} className="text-gold-500/40" />
+              </div>
+
+              <h2 className="text-3xl md:text-4xl font-light text-white leading-tight">
+                Peekaboo I see you, <span className="text-gold-500">{name}</span> nice to meet you.
+              </h2>
+              
+              <p className="text-white/50 text-lg font-light max-w-xs mx-auto">
+                Where should I send the summary of our conversation once we've finished?
+              </p>
+
+              <div className="relative max-w-sm mx-auto">
+                <div className="absolute left-0 bottom-5 text-white/20">
+                  <Mail size={20} />
+                </div>
+                <input
+                  autoFocus
+                  type="email"
+                  placeholder="Email address..."
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && email && navigate('/chat')}
+                  className="w-full bg-transparent border-b border-white/20 py-4 pl-10 text-xl text-center outline-none focus:border-gold-500 transition-all text-white placeholder:text-white/5"
+                />
+                <button
+                  onClick={() => navigate('/homepage')}
+                  disabled={!email}
+                  className="mt-12 w-full py-4 bg-gold-500 text-black font-bold tracking-[0.3em] rounded-full hover:bg-gold-400 transition-all disabled:opacity-20"
+                >
+                  LET'S BEGIN
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* FOOTER */}
+      <footer className="absolute bottom-10 opacity-20">
+        <p className="text-[9px] uppercase tracking-[0.5em]">Garry &bull;</p>
       </footer>
     </div>
   );
