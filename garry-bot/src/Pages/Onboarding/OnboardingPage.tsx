@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next"; 
 import { Mail, Sparkles, ArrowRight, Heart } from "lucide-react";
 
 export default function OnboardingPage() {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -13,10 +15,8 @@ export default function OnboardingPage() {
 
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center p-6 overflow-hidden relative bg-[#050505]">
-      
       <div className="w-full max-w-lg">
         <AnimatePresence mode="wait">
-          {/* STEP 1: ASKING FOR NAME */}
           {step === 1 && (
             <motion.div
               key="step1"
@@ -32,19 +32,19 @@ export default function OnboardingPage() {
               </div>
               
               <h2 className="text-3xl md:text-4xl font-light text-white leading-tight">
-                Hello. I'm <span className="text-gold-500 font-medium">Garry</span>. <br />
-                May I ask who I have the pleasure of assisting today?
+                {t('welcome')} <br />
+                <span className="text-white/80">{t('identity_ask')}</span>
               </h2>
 
               <div className="relative max-w-sm mx-auto">
                 <input
                   autoFocus
                   type="text"
-                  placeholder="Your name..."
+                  placeholder={t('placeholder_name')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && name && nextStep()}
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-2xl text-center outline-none focus:border-gold-500 transition-all text-white placeholder:text-white/5"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-2xl text-center outline-none focus:border-gold-500 transition-all text-white placeholder:text-white/10"
                 />
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -58,7 +58,6 @@ export default function OnboardingPage() {
             </motion.div>
           )}
 
-          {/* STEP 2: ASKING FOR EMAIL WITH PERSONAL TOUCH */}
           {step === 2 && (
             <motion.div
               key="step2"
@@ -72,11 +71,18 @@ export default function OnboardingPage() {
               </div>
 
               <h2 className="text-3xl md:text-4xl font-light text-white leading-tight">
-                Peekaboo I see you, <span className="text-gold-500">{name}</span> nice to meet you.
-              </h2>
+            
+              <Trans 
+                  i18nKey="greeting_peekaboo" 
+                  values={{ name: name }}
+                  components={{ spanName: <span className="text-gold-500" /> }}
+              >
+
+              </Trans>
+            </h2>
               
               <p className="text-white/50 text-lg font-light max-w-xs mx-auto">
-                Where should I send the summary of our conversation once we've finished?
+                {t('email_ask')}
               </p>
 
               <div className="relative max-w-sm mx-auto">
@@ -89,26 +95,21 @@ export default function OnboardingPage() {
                   placeholder="Email address..."
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && email && navigate('/chat')}
-                  className="w-full bg-transparent border-b border-white/20 py-4 pl-10 text-xl text-center outline-none focus:border-gold-500 transition-all text-white placeholder:text-white/5"
+                  onKeyDown={(e) => e.key === "Enter" && email && navigate('/homepage')}
+                  className="w-full bg-transparent border-b border-white/20 py-4 pl-10 text-xl text-center outline-none focus:border-gold-500 transition-all text-white placeholder:text-white/10"
                 />
                 <button
                   onClick={() => navigate('/homepage')}
                   disabled={!email}
                   className="mt-12 w-full py-4 bg-gold-500 text-black font-bold tracking-[0.3em] rounded-full hover:bg-gold-400 transition-all disabled:opacity-20"
                 >
-                  LET'S BEGIN
+                  {t('btn_initialize')}
                 </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {/* FOOTER */}
-      <footer className="absolute bottom-10 opacity-20">
-        <p className="text-[9px] uppercase tracking-[0.5em]">Garry &bull;</p>
-      </footer>
     </div>
   );
 }

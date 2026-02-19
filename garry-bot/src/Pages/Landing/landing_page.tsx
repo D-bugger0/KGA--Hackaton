@@ -1,8 +1,25 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // Added
 import { useLanguage } from '../../context/LanguageContext';
 import { Bot, Sparkles } from 'lucide-react';
+
+
+
+const langCodeMap: Record<string, string> = {
+  "English": "en",
+  "isiZulu": "zu",
+  "isiXhosa": "xh",
+  "Sesotho": "st",
+  "Afrikaans": "af",
+  "Sepedi": "nso",
+  "isiNdebele": "nd",
+  "Tshivenda": "ve",
+  "Xitsonga": "xs",
+  "siSwati": "sw",
+  "Setswana": "tsn"
+};
 
 const greetings = [
   { text: "Hello", lang: "English", proc: "Initializing Neural Links..." },
@@ -19,6 +36,7 @@ const greetings = [
 ];
 
 export default function LandingPage() {
+  const { i18n } = useTranslation(); // Hook into i18next
   const [index, setIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedLang, setSelectedLang] = useState<any>(null);
@@ -43,20 +61,25 @@ export default function LandingPage() {
       window.removeEventListener("mousemove", handleMouseMove);
       clearInterval(timer);
     };
-  }, [isProcessing]);
+  }, [isProcessing, mouseX, mouseY]);
 
   const handleLanguageSelect = (item: typeof greetings[0]) => {
-    // 1. Lock the UI
     setIsProcessing(true);
     setSelectedLang(item);
 
-    // 2. Fly saucer to Garry's head
+    // 1. Determine the i18n code
+    const code = langCodeMap[item.lang] || 'en';
+
+    // 2. Set language globally in context AND i18next
+    setLanguage(code as any);
+    i18n.changeLanguage(code);
+
+    // 3. Move the saucer (Visual feedback)
     mouseX.set(window.innerWidth / 2 - 12);
     mouseY.set(window.innerHeight / 2 - 160);
 
-    // 3. ACTUAL DELAY: Wait 2.5 seconds so user sees the "Thinking" state
+    // 4. Navigate after the "Neural Link" animation
     setTimeout(() => {
-      setLanguage(item.lang.toLowerCase() as any);
       navigate('/onboarding');
     }, 2500); 
   };
@@ -71,7 +94,7 @@ export default function LandingPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl gap-12">
         
-        {/* BOT ICON - More space around it */}
+        {/* BOT ICON */}
         <motion.div animate={isProcessing ? { y: [0, -10, 0], scale: 1.1 } : { scale: 1 }}>
           <div className="relative bg-gradient-to-b from-gold-500/20 to-transparent p-[2px] rounded-3xl border border-gold-500/10">
             <div className="bg-[#080808] p-6 rounded-[calc(1.5rem-2px)] shadow-2xl">
@@ -80,7 +103,7 @@ export default function LandingPage() {
           </div>
         </motion.div>
 
-        {/* TEXT AREA - Added more height for better vertical rhythm */}
+        {/* TEXT AREA */}
         <div className="h-32 flex flex-col items-center justify-center">
           <AnimatePresence mode="wait">
             {!isProcessing ? (
@@ -122,33 +145,30 @@ export default function LandingPage() {
           </AnimatePresence>
         </div>
 
-        {/* GRID - Responsive columns with balanced bottom row */}
-            <motion.div 
-              animate={isProcessing ? { opacity: 0, y: 40 } : { opacity: 1, y: 0 }}
-              className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 w-full max-w-3xl px-2"
+        {/* GRID */}
+        <motion.div 
+          animate={isProcessing ? { opacity: 0, y: 40 } : { opacity: 1, y: 0 }}
+          className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 w-full max-w-3xl px-2"
+        >
+          {greetings.map((g) => (
+            <button
+              key={g.lang}
+              onClick={() => handleLanguageSelect(g)}
+              className={`
+                group relative p-4 md:p-5 bg-white/[0.03] border border-white/10 rounded-2xl 
+                hover:border-gold-500/50 hover:bg-gold-500/10 transition-all duration-300
+                ${g.lang === "Setswana" ? "col-span-2 md:col-span-1 md:col-start-3" : ""} 
+              `}
             >
-          {greetings.map((g, i) => (
-          <button
-            key={g.lang}
-            onClick={() => handleLanguageSelect(g)}
-            className={`
-            group relative p-4 md:p-5 bg-white/[0.03] border border-white/10 rounded-2xl 
-            hover:border-gold-500/50 hover:bg-gold-500/10 transition-all duration-300
-            ${g.lang === "Setswana" ? "col-span-2 md:col-span-1 md:col-start-3" : ""} 
-            `}
-          >
-          <span className="text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-white/40 group-hover:text-gold-400 transition-colors">
-            {g.lang}
-          </span>
-      
-          {/* Corner Accent */}
-            <div className="absolute top-3 left-3 w-1.5 h-1.5 border-t border-l border-white/10 group-hover:border-gold-500 transition-colors" />
-        </button>
-      ))}
-    </motion.div>
+              <span className="text-[10px] md:text-[11px] font-bold tracking-[0.2em] uppercase text-white/40 group-hover:text-gold-400 transition-colors">
+                {g.lang}
+              </span>
+              <div className="absolute top-3 left-3 w-1.5 h-1.5 border-t border-l border-white/10 group-hover:border-gold-500 transition-colors" />
+            </button>
+          ))}
+        </motion.div>
       </div>
 
-      {/* FOOTER - Moved purely to bottom with justify-between on main container */}
       <footer className="flex items-center gap-6 opacity-30 mt-auto">
         <div className="h-[1px] w-12 bg-gold-500/20" />
         <p className="text-[10px] uppercase tracking-[0.6em]">Garry 2026</p>
