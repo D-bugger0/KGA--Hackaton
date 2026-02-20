@@ -14,6 +14,44 @@ export default function HomePage() {
     { role: 'assistant', content: t('content') }
   ]);
 
+  const playBase64Audio = (base64Data: string) => {
+    try {
+      const sampleRate = 24000; 
+      const binaryString = window.atob(base64Data);
+      const pcmData = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        pcmData[i] = binaryString.charCodeAt(i);
+      }
+
+      const header = new ArrayBuffer(44);
+      const view = new DataView(header);
+      const writeString = (offset: number, string: string) => {
+        for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+      };
+
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + pcmData.length, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); 
+      view.setUint16(22, 1, true); // Mono
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, pcmData.length, true);
+
+      const blob = new Blob([header, pcmData], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
+    } catch (e) {
+      console.error("Audio Playback Error:", e);
+    }
+  };
+
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
 
@@ -35,10 +73,20 @@ export default function HomePage() {
 
       const data = await response.json();
 
-      setMessages(prev => [...prev, { 
+      // Update Messages
+      const botMessage = { 
         role: 'assistant', 
-        content: data.output || data.message || "Garry is temporarily unavailable." 
-      }]);
+        content: data.output || data.message || "Garry is temporarily unavailable.",
+        audio: data.audioData // Save the audio string in the message object
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+
+      // Trigger Auto-play if audio data exists
+      if (data.audioData) {
+        playBase64Audio(data.audioData);
+      }
+
     } catch (error) {
       console.error("Connection Error:", error);
       setMessages(prev => [...prev, { role: 'assistant', content: "Connection lost. Please check your n8n instance." }]);
@@ -52,7 +100,7 @@ export default function HomePage() {
       <nav className="p-6 border-b border-white/5 flex justify-between items-center backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Shield size={18} className="text-gold-500" />
-          <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-50">{t('top_text')}</span>
+          <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-50">{t('The Crown Room')}</span>
         </div>
         <div className="flex bg-white/5 p-1 rounded-full border border-white/10">
           <button onClick={() => setIsVoiceMode(false)} className={`px-4 py-1.5 rounded-full text-[9px] uppercase tracking-widest transition-all flex items-center gap-2 ${!isVoiceMode ? 'bg-gold-500 text-black font-bold' : 'text-white/40'}`}>
@@ -70,8 +118,18 @@ export default function HomePage() {
             <>
               {messages.map((msg, i) => (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] ${msg.role === 'user' ? 'bg-gold-500/10 p-4 rounded-2xl border border-gold-500/20' : ''}`}>
+                  <div className={`max-w-[85%] relative group ${msg.role === 'user' ? 'bg-gold-500/10 p-4 rounded-2xl border border-gold-500/20' : ''}`}>
                     <p className="text-lg font-light leading-relaxed">{msg.content}</p>
+                    
+                    {/* Replay Audio Button for Garry's messages */}
+                    {msg.role === 'assistant' && msg.audio && (
+                      <button 
+                        onClick={() => playBase64Audio(msg.audio)}
+                        className="mt-2 flex items-center gap-2 text-[10px] text-gold-500/50 hover:text-gold-500 transition-colors"
+                      >
+                        <Volume2 size={12} /> {t('Listen Again')}
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               ))}
