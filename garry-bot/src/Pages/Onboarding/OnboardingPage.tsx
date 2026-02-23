@@ -13,6 +13,18 @@ export default function OnboardingPage() {
 
   const nextStep = () => setStep(step + 1);
 
+  // --- NEW: Save data to localStorage before navigating ---
+  const handleComplete = () => {
+    if (!name || !email) return;
+    
+    // Storing data so HomePage can access it
+    localStorage.setItem("garry_user_name", name);
+    localStorage.setItem("garry_user_email", email);
+    
+    // Proceed to Garry's lounge
+    navigate('/homepage');
+  };
+
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center p-6 overflow-hidden relative bg-[#050505]">
       <div className="w-full max-w-lg">
@@ -71,15 +83,12 @@ export default function OnboardingPage() {
               </div>
 
               <h2 className="text-3xl md:text-4xl font-light text-white leading-tight">
-            
-              <Trans 
+                <Trans 
                   i18nKey="greeting_peekaboo" 
                   values={{ name: name }}
                   components={{ spanName: <span className="text-gold-500" /> }}
-              >
-
-              </Trans>
-            </h2>
+                />
+              </h2>
               
               <p className="text-white/50 text-lg font-light max-w-xs mx-auto">
                 {t('email_ask')}
@@ -95,11 +104,11 @@ export default function OnboardingPage() {
                   placeholder="Email address..."
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && email && navigate('/homepage')}
+                  onKeyDown={(e) => e.key === "Enter" && email && handleComplete()}
                   className="w-full bg-transparent border-b border-white/20 py-4 pl-10 text-xl text-center outline-none focus:border-gold-500 transition-all text-white placeholder:text-white/10"
                 />
                 <button
-                  onClick={() => navigate('/homepage')}
+                  onClick={handleComplete}
                   disabled={!email}
                   className="mt-12 w-full py-4 bg-gold-500 text-black font-bold tracking-[0.3em] rounded-full hover:bg-gold-400 transition-all disabled:opacity-20"
                 >

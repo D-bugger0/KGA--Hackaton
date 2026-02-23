@@ -10,7 +10,10 @@ export default function HomePage() {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const [messages, setMessages] = useState([
+  const [userName] = useState(() => localStorage.getItem("garry_user_name") || "");
+  const [userEmail] = useState(() => localStorage.getItem("garry_user_email") || "");
+
+  const [messages, setMessages] = useState<{ role: string; content: string; audio?: string }[]>([
     { role: 'assistant', content: t('content') }
   ]);
 
@@ -35,7 +38,7 @@ export default function HomePage() {
       writeString(12, 'fmt ');
       view.setUint32(16, 16, true);
       view.setUint16(20, 1, true); 
-      view.setUint16(22, 1, true); // Mono
+      view.setUint16(22, 1, true); 
       view.setUint32(24, sampleRate, true);
       view.setUint32(28, sampleRate * 2, true);
       view.setUint16(32, 2, true);
@@ -67,22 +70,22 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userQuery: userQuery,
-          language: i18n.language, 
+          language: i18n.language,
+          userName: userName,
+          userEmail: userEmail,
         }),
       });
 
       const data = await response.json();
 
-      // Update Messages
       const botMessage = { 
         role: 'assistant', 
         content: data.output || data.message || "Garry is temporarily unavailable.",
-        audio: data.audioData // Save the audio string in the message object
+        audio: data.audioData 
       };
 
       setMessages(prev => [...prev, botMessage]);
 
-      // Trigger Auto-play if audio data exists
       if (data.audioData) {
         playBase64Audio(data.audioData);
       }
@@ -121,13 +124,13 @@ export default function HomePage() {
                   <div className={`max-w-[85%] relative group ${msg.role === 'user' ? 'bg-gold-500/10 p-4 rounded-2xl border border-gold-500/20' : ''}`}>
                     <p className="text-lg font-light leading-relaxed">{msg.content}</p>
                     
-                    {/* Replay Audio Button for Garry's messages */}
+                    {/* RESTORED: Audio Call to Action specifically for Garry's messages */}
                     {msg.role === 'assistant' && msg.audio && (
                       <button 
-                        onClick={() => playBase64Audio(msg.audio)}
-                        className="mt-2 flex items-center gap-2 text-[10px] text-gold-500/50 hover:text-gold-500 transition-colors"
+                        onClick={() => playBase64Audio(msg.audio!)}
+                        className="mt-4 flex items-center gap-2 px-3 py-1.5 bg-gold-500/5 border border-gold-500/20 rounded-full text-[10px] uppercase tracking-widest text-gold-500 hover:bg-gold-500 hover:text-black transition-all"
                       >
-                        <Volume2 size={12} /> {t('Listen Again')}
+                        <Volume2 size={12} /> {t('Listen to Garry')}
                       </button>
                     )}
                   </div>
@@ -140,7 +143,7 @@ export default function HomePage() {
               )}
             </>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center py-20">
+            <div className="h-full flex flex-col items-center justify-center py-20 text-center">
                <motion.div animate={{ scale: isListening ? [1, 1.2, 1] : 1 }} transition={{ repeat: Infinity, duration: 1.5 }} onClick={() => setIsListening(!isListening)} className="w-32 h-32 rounded-full bg-gold-500/20 border border-gold-500/40 flex items-center justify-center mb-8 cursor-pointer">
                  <Mic size={40} className="text-gold-500" />
                </motion.div>
