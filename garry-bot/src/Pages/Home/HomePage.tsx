@@ -55,6 +55,35 @@ export default function HomePage() {
     }
   };
 
+ const handleEmailDispatch = async () => {
+  // Find the last message from Garry (assistant)
+  const lastGarryResponse = [...messages].reverse().find(m => m.role === 'assistant')?.content;
+    const userQuery = inputText;
+    setInputText(""); 
+    setIsLoading(true);
+  
+  if (!lastGarryResponse) return;
+
+  setIsLoading(true);
+  try {
+    await fetch("http://localhost:5678/webhook/9a7e1bda-f561-4583-b8ca-6c8747d72dae", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userName: userName,
+        userEmail: userEmail,
+        userQuery: userQuery,
+        emailBody: lastGarryResponse, 
+      }),
+    });
+    alert("I just send the summary to your email check it out!");
+  } catch (e) {
+    console.error(e);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
 
@@ -65,7 +94,7 @@ export default function HomePage() {
     setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
 
     try {
-      const response = await fetch("http://localhost:5678/webhook-test/52ff878f-162d-429e-8537-5b27a22ad4b5", {
+      const response = await fetch("http://localhost:5678/webhook/52ff878f-162d-429e-8537-5b27a22ad4b5", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -123,8 +152,6 @@ export default function HomePage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] relative group ${msg.role === 'user' ? 'bg-gold-500/10 p-4 rounded-2xl border border-gold-500/20' : ''}`}>
                     <p className="text-lg font-light leading-relaxed">{msg.content}</p>
-                    
-                    {/* RESTORED: Audio Call to Action specifically for Garry's messages */}
                     {msg.role === 'assistant' && msg.audio && (
                       <button 
                         onClick={() => playBase64Audio(msg.audio!)}
@@ -159,7 +186,13 @@ export default function HomePage() {
           <div className="flex justify-center gap-4">
             <button className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500"><Download size={14} /> {t('download')}</button>
             <span className="text-white/10">|</span>
-            <button className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500"><Mail size={14} /> {t('email')}</button>
+            {/* LINKED NEW FUNCTION HERE */}
+            <button 
+              onClick={handleEmailDispatch} 
+              className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500 transition-colors"
+            >
+              <Mail size={14} /> {t('email')}
+            </button>
           </div>
 
           {!isVoiceMode && (
