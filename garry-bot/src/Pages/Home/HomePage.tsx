@@ -142,58 +142,43 @@ const handleSpeech = async () => {
         recorder.onstop = async () => {
           if (audioChunksRef.current.length === 0) return;
 
+          // 1. Create the Blob
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          
-          // PARSE AUDIO: Create a local URL for the user's chat bubble
           const userVoiceUrl = URL.createObjectURL(audioBlob);
 
-          // CONVERT TO BASE64: Preparing the "bypass" string
-          const reader = new FileReader();
-          reader.readAsDataURL(audioBlob);
-          reader.onloadend = async () => {
-            // result is "data:audio/webm;base64,AAAA..." -> we just want the part after the comma
-            const base64Audio = reader.result?.toString().split(',')[1];
+          setIsLoading(true);
 
-            setIsLoading(true);
-            try {
-              const response = await fetch("http://localhost:5678/webhook-test/758f3876-6c90-4210-8a64-c65f4c155916", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  audioData: base64Audio, // The massive string that needs the n8n Code Node bypass
-                  userName,
-                  userEmail,
-                  language: i18n.language
-                }),
-              });
+          // 2. THE FIX: Use FormData to send a real file
+          const formData = new FormData();
+          // We name it 'file' to match the 'Field Name for Binary Data' in your n8n screenshot
+          formData.append('file', audioBlob, 'recording.webm'); 
+          formData.append('userName', userName);
+          formData.append('userEmail', userEmail);
 
-              if (!response.ok) throw new Error("Server failed to receive audio string");
+          try {
+            const response = await fetch("http://localhost:5678/webhook-test/e8df6303-25fe-43bd-84e2-9c326dea3a8e", {
+              method: "POST",
+              // IMPORTANT: Do NOT set Content-Type header. The browser does it for FormData
+              body: formData, 
+            });
 
-              const data = await response.json();
+            if (!response.ok) throw new Error("n8n failed to process file");
 
-              // Update the UI with the local audio for the user and remote audio for Garry
-              setMessages(prev => [
-                ...prev,
-                { 
-                  role: 'user', 
-                  content: "Voice Message", 
-                  audio: userVoiceUrl 
-                },
-                { 
-                  role: 'assistant', 
-                  content: data.output || "Processed.", 
-                  audio: data.audioData 
-                }
-              ]);
+            const data = await response.json();
 
-              if (data.audioData) playBase64Audio(data.audioData);
+            setMessages(prev => [
+              ...prev,
+              { role: 'user', content: "Voice Message", audio: userVoiceUrl },
+              { role: 'assistant', content: data.output || "Processed.", audio: data.audioData }
+            ]);
 
-            } catch (error) {
-              console.error("JSON Speech Error:", error);
-            } finally {
-              setIsLoading(false);
-            }
-          };
+            if (data.audioData) playBase64Audio(data.audioData);
+
+          } catch (error) {
+            console.error("Speech Error:", error);
+          } finally {
+            setIsLoading(false);
+          }
         };
 
         recorder.start(100); 
@@ -203,7 +188,6 @@ const handleSpeech = async () => {
       }
     }
   };
-
   return (
     <div className="h-screen w-full bg-[#050505] text-white flex flex-col overflow-hidden">
       <nav className="p-6 border-b border-white/5 flex justify-between items-center backdrop-blur-md">
