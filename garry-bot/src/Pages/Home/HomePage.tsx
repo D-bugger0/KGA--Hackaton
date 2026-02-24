@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Mic, MessageSquare, Send, Download, Mail, Shield, Volume2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,10 @@ export default function HomePage() {
   const [isListening, setIsListening] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Use refs for the recorder to ensure they persist and don't cause re-render loops
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const [userName] = useState(() => localStorage.getItem("garry_user_name") || "");
   const [userEmail] = useState(() => localStorage.getItem("garry_user_email") || "");
@@ -55,42 +59,35 @@ export default function HomePage() {
     }
   };
 
- const handleEmailDispatch = async () => {
-  // Find the last message from Garry (assistant)
-  const lastGarryResponse = [...messages].reverse().find(m => m.role === 'assistant')?.content;
-    const userQuery = inputText;
-    setInputText(""); 
-    setIsLoading(true);
-  
-  if (!lastGarryResponse) return;
+  const handleEmailDispatch = async () => {
+    const lastGarryResponse = [...messages].reverse().find(m => m.role === 'assistant')?.content;
+    if (!lastGarryResponse) return;
 
-  setIsLoading(true);
-  try {
-    await fetch("http://localhost:5678/webhook/9a7e1bda-f561-4583-b8ca-6c8747d72dae", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userName: userName,
-        userEmail: userEmail,
-        userQuery: userQuery,
-        emailBody: lastGarryResponse, 
-      }),
-    });
-    alert("I just send the summary to your email check it out!");
-  } catch (e) {
-    console.error(e);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    setIsLoading(true);
+    try {
+      await fetch("http://localhost:5678/webhook/9a7e1bda-f561-4583-b8ca-6c8747d72dae", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userName,
+          userEmail,
+          userQuery: inputText,
+          emailBody: lastGarryResponse, 
+        }),
+      });
+      alert("I just send the summary to your email check it out!");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
-
     const userQuery = inputText;
     setInputText(""); 
     setIsLoading(true);
-
     setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
 
     try {
@@ -98,15 +95,14 @@ export default function HomePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userQuery: userQuery,
+          userQuery,
           language: i18n.language,
-          userName: userName,
-          userEmail: userEmail,
+          userName,
+          userEmail,
         }),
       });
 
       const data = await response.json();
-
       const botMessage = { 
         role: 'assistant', 
         content: data.output || data.message || "Garry is temporarily unavailable.",
@@ -114,16 +110,97 @@ export default function HomePage() {
       };
 
       setMessages(prev => [...prev, botMessage]);
-
-      if (data.audioData) {
-        playBase64Audio(data.audioData);
-      }
-
+      if (data.audioData) playBase64Audio(data.audioData);
     } catch (error) {
       console.error("Connection Error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Connection lost. Please check your n8n instance." }]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+const handleSpeech = async () => {
+    if (isListening) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+        setIsListening(false);
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        
+        mediaRecorderRef.current = recorder;
+        audioChunksRef.current = [];
+
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        recorder.onstop = async () => {
+          if (audioChunksRef.current.length === 0) return;
+
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          
+          // PARSE AUDIO: Create a local URL for the user's chat bubble
+          const userVoiceUrl = URL.createObjectURL(audioBlob);
+
+          // CONVERT TO BASE64: Preparing the "bypass" string
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          reader.onloadend = async () => {
+            // result is "data:audio/webm;base64,AAAA..." -> we just want the part after the comma
+            const base64Audio = reader.result?.toString().split(',')[1];
+
+            setIsLoading(true);
+            try {
+              const response = await fetch("http://localhost:5678/webhook-test/758f3876-6c90-4210-8a64-c65f4c155916", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  audioData: base64Audio, // The massive string that needs the n8n Code Node bypass
+                  userName,
+                  userEmail,
+                  language: i18n.language
+                }),
+              });
+
+              if (!response.ok) throw new Error("Server failed to receive audio string");
+
+              const data = await response.json();
+
+              // Update the UI with the local audio for the user and remote audio for Garry
+              setMessages(prev => [
+                ...prev,
+                { 
+                  role: 'user', 
+                  content: "Voice Message", 
+                  audio: userVoiceUrl 
+                },
+                { 
+                  role: 'assistant', 
+                  content: data.output || "Processed.", 
+                  audio: data.audioData 
+                }
+              ]);
+
+              if (data.audioData) playBase64Audio(data.audioData);
+
+            } catch (error) {
+              console.error("JSON Speech Error:", error);
+            } finally {
+              setIsLoading(false);
+            }
+          };
+        };
+
+        recorder.start(100); 
+        setIsListening(true);
+      } catch (err) {
+        console.error("Mic Error:", err);
+      }
     }
   };
 
@@ -171,11 +248,11 @@ export default function HomePage() {
             </>
           ) : (
             <div className="h-full flex flex-col items-center justify-center py-20 text-center">
-               <motion.div animate={{ scale: isListening ? [1, 1.2, 1] : 1 }} transition={{ repeat: Infinity, duration: 1.5 }} onClick={() => setIsListening(!isListening)} className="w-32 h-32 rounded-full bg-gold-500/20 border border-gold-500/40 flex items-center justify-center mb-8 cursor-pointer">
-                 <Mic size={40} className="text-gold-500" />
-               </motion.div>
-               <h2 className="text-xl font-light tracking-widest uppercase italic">{isListening ? t('listening') : t('tap_to_speak')}</h2>
-               <p className="text-white/30 text-[10px] mt-4 tracking-[0.4em] text-center">{t('ready_to_assist')}</p>
+                <motion.div animate={{ scale: isListening ? [1, 1.2, 1] : 1 }} transition={{ repeat: Infinity, duration: 1.5 }} onClick={handleSpeech} className="w-32 h-32 rounded-full bg-gold-500/20 border border-gold-500/40 flex items-center justify-center mb-8 cursor-pointer">
+                  {isLoading ? <Loader2 size={40} className="text-gold-500 animate-spin" /> : <Mic size={40} className="text-gold-500" />}
+                </motion.div>
+                <h2 className="text-xl font-light tracking-widest uppercase italic">{isListening ? "Listening..." : t('tap_to_speak')}</h2>
+                <p className="text-white/30 text-[10px] mt-4 tracking-[0.4em] text-center">{t('ready_to_assist')}</p>
             </div>
           )}
         </div>
@@ -186,11 +263,7 @@ export default function HomePage() {
           <div className="flex justify-center gap-4">
             <button className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500"><Download size={14} /> {t('download')}</button>
             <span className="text-white/10">|</span>
-            {/* LINKED NEW FUNCTION HERE */}
-            <button 
-              onClick={handleEmailDispatch} 
-              className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500 transition-colors"
-            >
+            <button onClick={handleEmailDispatch} className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500 transition-colors">
               <Mail size={14} /> {t('email')}
             </button>
           </div>
