@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MessageSquare, Send, Download, Mail, Shield, Volume2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -9,18 +9,19 @@ export default function HomePage() {
   const [isListening, setIsListening] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [lastGarryResponse, setLastGarryResponse] = useState("");
 
-  // Use refs for the recorder to ensure they persist and don't cause re-render loops
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  const [userName] = useState(() => localStorage.getItem("garry_user_name") || "");
+  const [userName] = useState(() => localStorage.getItem("garry_user_name") || "Guest");
   const [userEmail] = useState(() => localStorage.getItem("garry_user_email") || "");
 
   const [messages, setMessages] = useState<{ role: string; content: string; audio?: string }[]>([
     { role: 'assistant', content: t('content') }
   ]);
 
+  // Audio Playback Engine
   const playBase64Audio = (base64Data: string) => {
     try {
       const sampleRate = 24000; 
@@ -75,7 +76,7 @@ export default function HomePage() {
           emailBody: lastGarryResponse, 
         }),
       });
-      alert("I just send the summary to your email check it out!");
+      alert("I just sent the summary to your email, check it out!");
     } catch (e) {
       console.error(e);
     } finally {
@@ -83,6 +84,10 @@ export default function HomePage() {
     }
   };
 
+  /**
+   * CHAT MODE HANDLER
+   * Sends text, stores audio, but DOES NOT auto-play.
+   */
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
     const userQuery = inputText;
@@ -91,7 +96,7 @@ export default function HomePage() {
     setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
 
     try {
-      const response = await fetch("http://localhost:5678/webhook/52ff878f-162d-429e-8537-5b27a22ad4b5", {
+      const response = await fetch("http://localhost:5678/webhook/eef99f51-2d57-46a4-89ce-25e10187c93a", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -110,7 +115,7 @@ export default function HomePage() {
       };
 
       setMessages(prev => [...prev, botMessage]);
-      if (data.audioData) playBase64Audio(data.audioData);
+      // Note: playBase64Audio is NOT called here so chat stays silent until clicked.
     } catch (error) {
       console.error("Connection Error:", error);
     } finally {
@@ -118,7 +123,11 @@ export default function HomePage() {
     }
   };
 
-const handleSpeech = async () => {
+  /**
+   * VOICE MODE HANDLER
+   * Sends binary, displays response text, and AUTO-PLAYS audio.
+   */
+  const handleSpeech = async () => {
     if (isListening) {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
@@ -134,27 +143,23 @@ const handleSpeech = async () => {
         audioChunksRef.current = [];
 
         recorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-          }
+          if (event.data && event.data.size > 0) audioChunksRef.current.push(event.data);
         };
 
         recorder.onstop = async () => {
           if (audioChunksRef.current.length === 0) return;
 
-          // 1. Create the Blob
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           const userVoiceUrl = URL.createObjectURL(audioBlob);
 
           setIsLoading(true);
+          setLastGarryResponse(""); 
 
-          // 2. THE FIX: Use FormData to send a real file
           const formData = new FormData();
-          // We name it 'file' to match the 'Field Name for Binary Data' in your n8n screenshot
           formData.append('file', audioBlob, 'recording.webm'); 
           formData.append('userName', userName);
           formData.append('userEmail', userEmail);
-          formData.append('userLanguage', i18n.language,)
+          formData.append('userLanguage', i18n.language);
 
           try {
             const response = await fetch("http://localhost:5678/webhook/758f3876-6c90-4210-8a64-c65f4c155916", {
@@ -165,17 +170,22 @@ const handleSpeech = async () => {
             if (!response.ok) throw new Error("n8n failed to process file");
 
             const data = await response.json();
+            const responseText = data.output || "I've processed your request.";
 
             setMessages(prev => [
               ...prev,
               { role: 'user', content: "Voice Message", audio: userVoiceUrl },
-              { role: 'assistant', content: data.output || "Processed.", audio: data.audioData }
+              { role: 'assistant', content: responseText, audio: data.audioData }
             ]);
 
+            setLastGarryResponse(responseText);
+            
+            // AUTO-PLAY ONLY IN VOICE MODE
             if (data.audioData) playBase64Audio(data.audioData);
 
           } catch (error) {
             console.error("Speech Error:", error);
+            setLastGarryResponse("Sorry, I couldn't process that. Check your connection.");
           } finally {
             setIsLoading(false);
           }
@@ -188,8 +198,10 @@ const handleSpeech = async () => {
       }
     }
   };
+
   return (
     <div className="h-screen w-full bg-[#050505] text-white flex flex-col overflow-hidden">
+      {/* Navigation */}
       <nav className="p-6 border-b border-white/5 flex justify-between items-center backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Shield size={18} className="text-gold-500" />
@@ -205,6 +217,7 @@ const handleSpeech = async () => {
         </div>
       </nav>
 
+      {/* Main Content */}
       <main className="flex-1 overflow-y-auto px-6 py-10">
         <div className="max-w-2xl mx-auto space-y-10">
           {!isVoiceMode ? (
@@ -213,6 +226,8 @@ const handleSpeech = async () => {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] relative group ${msg.role === 'user' ? 'bg-gold-500/10 p-4 rounded-2xl border border-gold-500/20' : ''}`}>
                     <p className="text-lg font-light leading-relaxed">{msg.content}</p>
+                    
+                    {/* MANUAL LISTEN BUTTON FOR CHAT */}
                     {msg.role === 'assistant' && msg.audio && (
                       <button 
                         onClick={() => playBase64Audio(msg.audio!)}
@@ -231,17 +246,42 @@ const handleSpeech = async () => {
               )}
             </>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center py-20 text-center">
-                <motion.div animate={{ scale: isListening ? [1, 1.2, 1] : 1 }} transition={{ repeat: Infinity, duration: 1.5 }} onClick={handleSpeech} className="w-32 h-32 rounded-full bg-gold-500/20 border border-gold-500/40 flex items-center justify-center mb-8 cursor-pointer">
-                  {isLoading ? <Loader2 size={40} className="text-gold-500 animate-spin" /> : <Mic size={40} className="text-gold-500" />}
+            <div className="h-full flex flex-col items-center justify-center py-10 text-center">
+                <div className="min-h-[120px] mb-8 px-4">
+                  <AnimatePresence mode="wait">
+                    {isLoading ? (
+                      <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
+                        <Loader2 size={24} className="text-gold-500 animate-spin" />
+                        <p className="text-gold-500/50 uppercase tracking-[0.3em] text-[10px]">Processing Voice...</p>
+                      </motion.div>
+                    ) : (
+                      <motion.p key="response" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-xl font-light text-white italic max-w-md leading-relaxed">
+                        {lastGarryResponse}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <motion.div 
+                  animate={{ 
+                    scale: isListening ? [1, 1.1, 1] : 1,
+                    boxShadow: isListening ? ["0px 0px 0px rgba(212,175,55,0)", "0px 0px 50px rgba(212,175,55,0.3)", "0px 0px 0px rgba(212,175,55,0)"] : "none"
+                  }} 
+                  transition={{ repeat: Infinity, duration: 2 }} 
+                  onClick={handleSpeech} 
+                  className={`w-40 h-40 rounded-full flex items-center justify-center mb-8 cursor-pointer transition-all border-2 ${isListening ? 'bg-gold-500/20 border-gold-500' : 'bg-white/5 border-white/10 hover:border-gold-500/50'}`}
+                >
+                  <Mic size={48} className={isListening ? "text-gold-500" : "text-white/20"} />
                 </motion.div>
-                <h2 className="text-xl font-light tracking-widest uppercase italic">{isListening ? "Listening..." : t('tap_to_speak')}</h2>
-                <p className="text-white/30 text-[10px] mt-4 tracking-[0.4em] text-center">{t('ready_to_assist')}</p>
+
+                <h2 className="text-xl font-light tracking-[0.2em] uppercase">{isListening ? "I'm Listening..." : t('tap_to_speak')}</h2>
+                <p className="text-white/20 text-[10px] mt-4 tracking-[0.4em] uppercase">{t('ready_to_assist')}</p>
             </div>
           )}
         </div>
       </main>
 
+      {/* Footer */}
       <footer className="p-8 border-t border-white/5 bg-[#080808]/50">
         <div className="max-w-2xl mx-auto flex flex-col gap-6">
           <div className="flex justify-center gap-4">
@@ -260,9 +300,9 @@ const handleSpeech = async () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 type="text" 
                 placeholder={t('input_field')}
-                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl p-5 pr-16 focus:border-gold-500/50 outline-none placeholder:text-white/20"
+                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl p-5 pr-16 focus:border-gold-500/50 outline-none placeholder:text-white/20 transition-all"
               />
-              <button onClick={handleSend} disabled={isLoading} className="absolute right-3 top-3 p-2 bg-gold-500 rounded-xl text-black hover:scale-105 active:scale-95 disabled:opacity-50">
+              <button onClick={handleSend} disabled={isLoading} className="absolute right-3 top-3 p-2 bg-gold-500 rounded-xl text-black hover:scale-105 active:scale-95 disabled:opacity-50 transition-transform">
                 {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
               </button>
             </div>

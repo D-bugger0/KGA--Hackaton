@@ -1,59 +1,65 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next'; // Added
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../context/LanguageContext';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
-
+// --- Animated UFO Component (The Saucer) ---
+const UFOIcon = ({ size = 24 }: { size?: number }) => (
+  <motion.div
+    animate={{ y: [0, -4, 0], rotate: [-2, 2, -2] }}
+    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+  >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="text-gold-500 drop-shadow-[0_0_10px_rgba(212,175,55,0.8)]">
+      <path d="M12 4C9 4 7 6 7 8H17C17 6 15 4 12 4Z" fill="currentColor" fillOpacity="0.8"/>
+      <path d="M2 12C2 9.5 6.5 8 12 8C17.5 8 22 9.5 22 12C22 14.5 17.5 16 12 16C6.5 16 2 14.5 2 12Z" fill="currentColor" />
+      <circle cx="7" cy="12" r="0.8" fill="black" />
+      <circle cx="12" cy="12" r="0.8" fill="black" />
+      <circle cx="17" cy="12" r="0.8" fill="black" />
+      <motion.path animate={{ opacity: [0.2, 0.6, 0.2] }} transition={{ duration: 2, repeat: Infinity }} d="M9 16L7 22H17L15 16H9Z" fill="currentColor" fillOpacity="0.4" />
+    </svg>
+  </motion.div>
+);
 
 const langCodeMap: Record<string, string> = {
-  "English": "en",
-  "isiZulu": "zu",
-  "isiXhosa": "xh",
-  "Sesotho": "st",
-  "Afrikaans": "af",
-  "Sepedi": "nso",
-  "isiNdebele": "nd",
-  "Tshivenda": "ve",
-  "Xitsonga": "xs",
-  "siSwati": "sw",
-  "Setswana": "tsn"
+  "English": "en", "isiZulu": "zu", "isiXhosa": "xh", "Sesotho": "st",
+  "Afrikaans": "af", "Sepedi": "nso", "isiNdebele": "nd", "Tshivenda": "ve",
+  "Xitsonga": "xs", "siSwati": "sw", "Setswana": "tsn"
 };
 
 const greetings = [
-  { text: "Hello", lang: "English", proc: "Initializing Neural Links..." },
-  { text: "Sawubona", lang: "isiZulu", proc: "ngiyalungiselela..." },
-  { text: "Molo", lang: "isiXhosa", proc: "Ndiyalungiselela..." },
-  { text: "Dumela", lang: "Sesotho", proc: "kea itokisetsa..." },
-  { text: "Goeie dag", lang: "Afrikaans", proc: "ek maak gereed..." },
-  { text: "Thobela", lang: "Sepedi", proc: "ke a itokišetša..." },
-  { text: "Lotjhani", lang: "isiNdebele", proc: "Ngiyazilungiselela..." },
-  { text: "Nndaa", lang: "Tshivenda", proc: "ndi khou di lugisa..." },
-  { text: "Avuxeni", lang: "Xitsonga", proc: "U thoma..." },
-  { text: "Lidumele", lang: "siSwati", proc: "ndzi le ku lunghiseleleni..." },
-  { text: "Dumelang", lang: "Setswana", proc: "Ke a ipaakanya..." },
+  { text: "Hello", lang: "English" },
+  { text: "Sawubona", lang: "isiZulu" },
+  { text: "Molo", lang: "isiXhosa" },
+  { text: "Dumela", lang: "Sesotho" },
+  { text: "Goeie dag", lang: "Afrikaans" },
+  { text: "Thobela", lang: "Sepedi" },
+  { text: "Lotjhani", lang: "isiNdebele" },
+  { text: "Nndaa", lang: "Tshivenda" },
+  { text: "Avuxeni", lang: "Xitsonga" },
+  { text: "Lidumele", lang: "siSwati" },
+  { text: "Dumelang", lang: "Setswana" },
 ];
 
 export default function LandingPage() {
-  const { i18n } = useTranslation(); // Hook into i18next
+  const { i18n } = useTranslation();
   const [index, setIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedLang, setSelectedLang] = useState<any>(null);
   const { setLanguage } = useLanguage();
   const navigate = useNavigate();
 
   // Mouse Tracking
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const saucerX = useSpring(mouseX, { stiffness: 100, damping: 25 });
-  const saucerY = useSpring(mouseY, { stiffness: 100, damping: 25 });
+  const saucerX = useSpring(mouseX, { stiffness: 150, damping: 20 });
+  const saucerY = useSpring(mouseY, { stiffness: 150, damping: 20 });
 
   useEffect(() => {
     if (isProcessing) return;
     const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX + 20);
-      mouseY.set(e.clientY - 20);
+      mouseX.set(e.clientX - 15); // Centering the UFO on cursor
+      mouseY.set(e.clientY - 15);
     };
     window.addEventListener("mousemove", handleMouseMove);
     const timer = setInterval(() => setIndex((p) => (p + 1) % greetings.length), 2500);
@@ -65,31 +71,25 @@ export default function LandingPage() {
 
   const handleLanguageSelect = (item: typeof greetings[0]) => {
     setIsProcessing(true);
-    setSelectedLang(item);
-
-    // 1. Determine the i18n code
     const code = langCodeMap[item.lang] || 'en';
-
-    // 2. Set language globally in context AND i18next
     setLanguage(code as any);
     i18n.changeLanguage(code);
 
-    // 3. Move the saucer (Visual feedback)
-    mouseX.set(window.innerWidth / 2 - 12);
-    mouseY.set(window.innerHeight / 2 - 160);
+    // Visual feedback: Move saucer to the center bot icon
+    mouseX.set(window.innerWidth / 2 - 15);
+    mouseY.set(window.innerHeight / 2 - 80);
 
-    // 4. Navigate after the "Neural Link" animation
     setTimeout(() => {
       navigate('/onboarding');
     }, 2500); 
   };
 
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-between py-12 px-6 overflow-hidden relative bg-[#050505]">
+    <div className="h-screen w-full flex flex-col items-center justify-between py-12 px-6 overflow-hidden relative bg-[#050505] cursor-none">
       
-      {/* THE SAUCER */}
-      <motion.div style={{ x: saucerX, y: saucerY, position: "fixed", top: 0, left: 0, pointerEvents: "none", zIndex: 100 }}>
-        <Sparkles size={24} className="text-gold-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
+      {/* THE SAUCER (CURSOR) */}
+      <motion.div style={{ x: saucerX, y: saucerY, position: "fixed", top: 0, left: 0, pointerEvents: "none", zIndex: 200 }}>
+        <UFOIcon size={32} />
       </motion.div>
 
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl gap-12">
@@ -128,7 +128,7 @@ export default function LandingPage() {
                 className="flex flex-col items-center gap-4"
               >
                 <h2 className="text-2xl font-light text-gold-400 tracking-[0.3em] uppercase italic animate-pulse">
-                  {selectedLang?.proc}
+                  Lets get everything ready......
                 </h2>
                 <div className="flex gap-2">
                   {[0, 1, 2].map(i => (
@@ -145,7 +145,7 @@ export default function LandingPage() {
           </AnimatePresence>
         </div>
 
-        {/* GRID */}
+        {/* LANGUAGE GRID */}
         <motion.div 
           animate={isProcessing ? { opacity: 0, y: 40 } : { opacity: 1, y: 0 }}
           className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 w-full max-w-3xl px-2"
