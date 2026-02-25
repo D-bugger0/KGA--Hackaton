@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MessageSquare, Send, Download, Mail, Shield, Volume2, Loader2 } from "lucide-react";
+import { Mic, MessageSquare, Send, Mail, Shield, Volume2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function HomePage() {
@@ -17,8 +17,12 @@ export default function HomePage() {
   const [userName] = useState(() => localStorage.getItem("garry_user_name") || "Guest");
   const [userEmail] = useState(() => localStorage.getItem("garry_user_email") || "");
 
+  // Updated Greeting and Role Description only
   const [messages, setMessages] = useState<{ role: string; content: string; audio?: string }[]>([
-    { role: 'assistant', content: t('content') }
+    { 
+      role: 'assistant', 
+      content: `Hello ${userName}! I'm Garry, your dedicated chatbot assistant. I'm here to help you easily navigate and understand the Terms and Conditions of KGA. What can I clarify for you today?` 
+    }
   ]);
 
   // Audio Playback Engine
@@ -84,10 +88,6 @@ export default function HomePage() {
     }
   };
 
-  /**
-   * CHAT MODE HANDLER
-   * Sends text, stores audio, but DOES NOT auto-play.
-   */
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
     const userQuery = inputText;
@@ -115,7 +115,6 @@ export default function HomePage() {
       };
 
       setMessages(prev => [...prev, botMessage]);
-      // Note: playBase64Audio is NOT called here so chat stays silent until clicked.
     } catch (error) {
       console.error("Connection Error:", error);
     } finally {
@@ -123,10 +122,6 @@ export default function HomePage() {
     }
   };
 
-  /**
-   * VOICE MODE HANDLER
-   * Sends binary, displays response text, and AUTO-PLAYS audio.
-   */
   const handleSpeech = async () => {
     if (isListening) {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -180,7 +175,6 @@ export default function HomePage() {
 
             setLastGarryResponse(responseText);
             
-            // AUTO-PLAY ONLY IN VOICE MODE
             if (data.audioData) playBase64Audio(data.audioData);
 
           } catch (error) {
@@ -201,7 +195,6 @@ export default function HomePage() {
 
   return (
     <div className="h-screen w-full bg-[#050505] text-white flex flex-col overflow-hidden">
-      {/* Navigation */}
       <nav className="p-6 border-b border-white/5 flex justify-between items-center backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Shield size={18} className="text-gold-500" />
@@ -217,7 +210,6 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-y-auto px-6 py-10">
         <div className="max-w-2xl mx-auto space-y-10">
           {!isVoiceMode ? (
@@ -226,8 +218,6 @@ export default function HomePage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] relative group ${msg.role === 'user' ? 'bg-gold-500/10 p-4 rounded-2xl border border-gold-500/20' : ''}`}>
                     <p className="text-lg font-light leading-relaxed">{msg.content}</p>
-                    
-                    {/* MANUAL LISTEN BUTTON FOR CHAT */}
                     {msg.role === 'assistant' && msg.audio && (
                       <button 
                         onClick={() => playBase64Audio(msg.audio!)}
@@ -281,12 +271,10 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="p-8 border-t border-white/5 bg-[#080808]/50">
-        <div className="max-w-2xl mx-auto flex flex-col gap-6">
+        <div className="max-w-2xl mx-auto flex flex-col gap-6 text-center">
+          {/* Footer Disclaimer */}
           <div className="flex justify-center gap-4">
-            <button className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500"><Download size={14} /> {t('download')}</button>
-            <span className="text-white/10">|</span>
             <button onClick={handleEmailDispatch} className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500 transition-colors">
               <Mail size={14} /> {t('email')}
             </button>
@@ -299,7 +287,7 @@ export default function HomePage() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 type="text" 
-                placeholder={t('input_field')}
+                placeholder="Ask Garry about KGA Terms..."
                 className="w-full bg-white/[0.03] border border-white/10 rounded-2xl p-5 pr-16 focus:border-gold-500/50 outline-none placeholder:text-white/20 transition-all"
               />
               <button onClick={handleSend} disabled={isLoading} className="absolute right-3 top-3 p-2 bg-gold-500 rounded-xl text-black hover:scale-105 active:scale-95 disabled:opacity-50 transition-transform">

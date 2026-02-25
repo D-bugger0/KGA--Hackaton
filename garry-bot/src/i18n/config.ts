@@ -22,7 +22,7 @@ const resources = {
         "chat": "chat",
         "voice": "speak",
         "download": "Download summary PDF",
-        "email": " Dispatch to Email",
+        "email": " Send Summary to Email",
         "input_field": "Ask Garry about specific clauses...",
         "tap_to_speak": "Tap to Speak",
         "listening": "Garry is Listening...",
