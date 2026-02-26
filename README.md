@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+Project Rough Draft
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Project Planning
 
-Currently, two official plugins are available:
+Garry your AI assistant
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Tech Stack
 
-## React Compiler
+Front end
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Typescript, React, Vite
 
-## Expanding the ESLint configuration
+Back end
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+n8n, voice flow for voice model,
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Landing Page
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+A simple minimalistic UI - User is greeted by a friendly chat bot and ask for their preferred language
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Onboarding
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+name, number, email
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Home page
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Ask Garry - Garry gives user brief explanation of his duties and roles and ask user to ask him anything base of his roles
+
+Chat feature
+
+User enters his request in respected language and Garry answers the user based of the given information/pdf's
+
+Download summary
+
+User has the option to download his summary or ask Garry to email it to him
+
+Voice
+
+User can choose between chat or voice, same as chat same process and outcome but user gets a voice response from the bot
+
+Api' s and integration
+
+Gemini flash free tier Voiceflow free tier n8n workflow
+
+HOW TO RUN
+
+If you want to flex you technicla skills
+
+get the  link from github https://github.com/D-bugger0/KGA--Hackaton
+clone the repo to your local device git clone <repo link>
+after cloning the repo go the the directory cd <repo>
+i know you wanna jump into the code but wag n bietjie
+after you have moved in the repo directory run
+npm install this will install all required project dependencies to your device
+if you dont do this you will get issue runnung the project
+after the dependencies and packages are installed run
+npm run dev and click on the provided link
+there you go you can now interact with garry
+
+FOR THOSE LIKE ME WHO HAVE NO IDEA ABOUT HEAVY LIFTING
+
+here is a vercel link to the project
+
+BACKEND
+
+If you want to see the n8n backend and maybe make some aweesome changes 
+Download the projects .json file from here
+file
+after go to your n8n account and hit import from file and choose the file and see how dirty my house looks on the inside
+
