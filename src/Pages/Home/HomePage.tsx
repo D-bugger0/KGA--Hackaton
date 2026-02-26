@@ -67,6 +67,11 @@ export default function HomePage() {
   const handleEmailDispatch = async () => {
     const lastGarryResponse = [...messages].reverse().find(m => m.role === 'assistant')?.content;
     if (!lastGarryResponse) return;
+    
+    const userQuery = inputText;
+    setInputText(""); 
+    setIsLoading(true);
+    setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
 
     setIsLoading(true);
     try {
@@ -74,9 +79,9 @@ export default function HomePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userQuery,
           userName,
           userEmail,
-          userQuery: inputText,
           emailBody: lastGarryResponse, 
         }),
       });

@@ -1,45 +1,73 @@
-Project Rough Draft
+# React + TypeScript + Vite
 
-Project Planning
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Garry your AI assistant
+Currently, two official plugins are available:
 
-Tech Stack
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-Front end
+## React Compiler
 
-Typescript, React, Vite
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-Back end
+## Expanding the ESLint configuration
 
-n8n, voice flow for voice model, 
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-Landing Page
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-A simple minimalistic UI - User is greeted by a friendly chat bot and ask for their preferred language
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-Onboarding
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
 
-name, number, email
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-Home page
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-Ask Garry - Garry gives user brief explanation of his duties and roles and ask user to ask him anything base of his roles 
-
-Chat feature 
-
-User enters his request in respected language and Garry answers the user based of the given information/pdf's 
-
-Download summary
-
-User has the option to download his summary or ask Garry to email it to him
-
-Voice
-
-User can choose between chat or voice, same as chat same process and outcome but user gets a voice response from the bot 
-
-Api' s and integration
-
-Gemini flash free tier
-Voiceflow free tier
-n8n workflow
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
