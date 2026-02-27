@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MessageSquare, Send, Mail, Shield, Volume2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+// Set your live tunnel URL here
+const N8N_BASE_URL = "https://nonhistorical-bo-unsomnolently.ngrok-free.dev";
+
 export default function HomePage() {
   const { t, i18n } = useTranslation();
   const [isVoiceMode, setIsVoiceMode] = useState(false);
@@ -17,7 +20,6 @@ export default function HomePage() {
   const [userName] = useState(() => localStorage.getItem("garry_user_name") || "Guest");
   const [userEmail] = useState(() => localStorage.getItem("garry_user_email") || "");
 
-  // Updated Greeting and Role Description only
   const [messages, setMessages] = useState<{ role: string; content: string; audio?: string }[]>([
     { 
       role: 'assistant', 
@@ -25,7 +27,6 @@ export default function HomePage() {
     }
   ]);
 
-  // Audio Playback Engine
   const playBase64Audio = (base64Data: string) => {
     try {
       const sampleRate = 24000; 
@@ -65,24 +66,18 @@ export default function HomePage() {
   };
 
   const handleEmailDispatch = async () => {
-    const lastGarryResponse = [...messages].reverse().find(m => m.role === 'assistant')?.content;
-    if (!lastGarryResponse) return;
-    
-    const userQuery = inputText;
-    setInputText(""); 
-    setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
+    const lastGarryMsg = [...messages].reverse().find(m => m.role === 'assistant')?.content;
+    if (!lastGarryMsg) return;
 
     setIsLoading(true);
     try {
-      await fetch("http://localhost:5678/webhook/9a7e1bda-f561-4583-b8ca-6c8747d72dae", {
+      await fetch(`${N8N_BASE_URL}/webhook/9a7e1bda-f561-4583-b8ca-6c8747d72dae`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userQuery,
           userName,
           userEmail,
-          emailBody: lastGarryResponse, 
+          emailBody: lastGarryMsg, 
         }),
       });
       alert("I just sent the summary to your email, check it out!");
@@ -101,7 +96,7 @@ export default function HomePage() {
     setMessages(prev => [...prev, { role: 'user', content: userQuery }]);
 
     try {
-      const response = await fetch("http://localhost:5678/webhook/eef99f51-2d57-46a4-89ce-25e10187c93a", {
+      const response = await fetch(`${N8N_BASE_URL}/webhook/eef99f51-2d57-46a4-89ce-25e10187c93a`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -162,7 +157,7 @@ export default function HomePage() {
           formData.append('userLanguage', i18n.language);
 
           try {
-            const response = await fetch("http://localhost:5678/webhook/758f3876-6c90-4210-8a64-c65f4c155916", {
+            const response = await fetch(`${N8N_BASE_URL}/webhook/758f3876-6c90-4210-8a64-c65f4c155916`, {
               method: "POST",
               body: formData, 
             });
@@ -179,7 +174,6 @@ export default function HomePage() {
             ]);
 
             setLastGarryResponse(responseText);
-            
             if (data.audioData) playBase64Audio(data.audioData);
 
           } catch (error) {
@@ -278,7 +272,6 @@ export default function HomePage() {
 
       <footer className="p-8 border-t border-white/5 bg-[#080808]/50">
         <div className="max-w-2xl mx-auto flex flex-col gap-6 text-center">
-          {/* Footer Disclaimer */}
           <div className="flex justify-center gap-4">
             <button onClick={handleEmailDispatch} className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-gold-500 transition-colors">
               <Mail size={14} /> {t('email')}
